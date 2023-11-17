@@ -1,0 +1,61 @@
+Go to netlab-me.tafensw.edu.au
+
+
+# --------------------------------------------------------------------------------------
+1. ssh -X labadmin@192.168.1.1/labadmin
+2. Please copy and paste the following rules in the file /etc/nsm/rules/downloaded.rules
+3. To restart the sguil completelty please do the -> sudo so-sensor-restart
+# --------------------------------------------------------------------------------------
+# Rule 1: SQL Injection Attack
+# alert: Indicates that this rule will generate an alert if the conditions are met.
+# any any -> any any: The source and destination IP addresses and ports. ["from any source IP and port to any destination IP and port."]
+# flow:to_server: Specifies the direction of the traffic (towards the server).
+# established: Ensures that the rule only applies to established connections.
+# PCRE (Perl-Compatible Regular Expression)
+# pcre:"/('\s*OR\s*1\s*=\s*1|'\s*UNION\s*|'\s*;\s*--)/i
+# '\s*UNION\s*ALL\s*SELECT\s*: looks for the pattern ' UNION ALL SELECT with potential whitespace around the keywords. 
+# / ... /i: Delimiters and Modifier
+# /: Delimiters mark the beginning and end of the regular expression.
+# i: Modifier stands for case-insensitive matching.
+# '\s*OR\s* 1 \s*=\s* 1: ooks for the pattern ' OR 1=1 with potential whitespace (\s*) around the keywords. 
+# The 1=1 is always is true, to make the injection successful.
+# '\s*;\s*--: This segment looks for the pattern '; -- with potential whitespace around the semicolon. 
+# The | (pipe) character acts as a logical OR, allowing any of the specified patterns to trigger the match.
+# The \s* allows for any amount of whitespace (including none) around the SQL keywords.
+# ('\s*OR\s*1\s*=\s*1|'\s*UNION\s*|'\s*;\s*--): This is capturing the group that contains multiple alternatives separated by |. 
+#It will match either the pattern '\s*OR\s*1\s*=\s*1', '\s*UNION\s*', or '\s*;\s*--'.
+#sid:9000001; Unique identifier for this specific rule.
+#alert tcp any any -> any any (msg:"*Possible SQL Injection Attack Detected"; flow:to_server, established; pcre:"/('\s*OR\s*1\s*=\s*1|'\s*UNION\s*|'\s*;\s*--)/i"; sid:9000001;)
+
+Rule 2: Cross-Site Scripting (XSS) Attack
+#alert tcp any any -> any any (msg:"*Possible XSS Attack Detected"; flow:to_server, established; content:"<script>"; nocase; pcre:"/<script>/i"; sid:9000002;)
+#It looks for the presence of the string "<script>" (case-insensitive) in the payload.
+#The PCRE (/<script>/i) ensures that the search is case-insensitive.
+
+Rule 3: Cross-Site Request (CSRF) Attack
+alert tcp any any -> any any (msg:"*Possible Cross-Site Request (CSRF) Attack Detected"; flow:to_server, established; content:"Referer|3A| "; sid:9000003;)
+#It looks for the string "Referer: " in the payload.
+
+Rule 4: Command Execution Attack
+alert tcp any any -> any any (msg:"*Possible Command Execution Attempt"; content:"|3B|"; content:"&&"; sid:9000004;)
+#It looks for the characters ";" (|3B|) and "&&" in the payload.
+
+Rule 5: Brute Force Attack
+alert tcp any any -> any any (msg:"*Possible Brute Force Attack Detected"; flow:to_server, established; content:"Login"; nocase; pcre:"/^Login\d{2,}$/i"; sid:9000005;)
+#It looks for the string "Login" (case-insensitive) in the payload.
+#The PCRE (/^Login\d{2,}$/i) enforces the pattern where "Login" is followed by at least two digits.
+Rule 6: Insecure Direct Object References (IDOR) Attack
+alert tcp any any -> any any (msg:"*Possible IDOR Attack"; content:"GET"; nocase; http_method; pcre:"/\?.*item=(6|7|8|9|10|11|12|13|14|15)/i"; sid:9000006;)
+#It looks for the HTTP method "GET" in the payload.
+#The PCRE (/\?.*item=(6|7|8|9|10|11|12|13|14|15)/i) searches for a query parameter "item" followed by numbers 6 to 15.
+
+alert tcp any any -> any any (msg:"*Possible SQL Injection Attack Detected"; flow:to_server, established; pcre:"/('\s*OR\s*1\s*=\s*1|'\s*UNION\s*|'\s*;\s*--)/i"; sid:9000000;)
+alert tcp any any -> any any (msg:"*Possible SQL Injection Attack Detected"; flow:to_server, established; pcre:"/('\s*OR\s*1\s*=\s*1|'\s*UNION\s*ALL\s*SELECT\s*|'\s*;\s*--)/i"; sid:9000001;)
+alert tcp any any -> any any (msg:"*Possible XSS Attack Detected"; flow:to_server, established; content:"<script>"; nocase; pcre:"/<script>/i"; sid:9000002;)
+alert tcp any any -> any any (msg:"*Possible Cross-Site Request (CSRF) Attack Detected"; flow:to_server, established; content:"Referer|3A| "; sid:9000003;)
+alert tcp any any -> any any (msg:"*Possible Command Execution Attempt"; content:"|3B|"; content:"&&"; sid:9000004;)
+alert tcp any any -> any any (msg:"*Possible Brute Force Attack Detected"; flow:to_server, established; content:"Login"; nocase; pcre:"/^Login\d{2,}$/i"; sid:9000005;)
+alert tcp any any -> any any (msg:"*Possible IDOR Attack"; content:"GET"; nocase; http_method; pcre:"/\?.*item=(6|7|8|9|10|11|12|13|14|15)/i"; sid:9000006;)
+
+check the rule from the command line, or check the logs or 
+
